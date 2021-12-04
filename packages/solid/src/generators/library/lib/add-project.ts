@@ -29,7 +29,15 @@ function createBuildTarget(
   tree: Tree,
   options: NormalizedSchema
 ): TargetConfiguration {
+  if (options.buildable || options.publishable) {
+    return buildable(tree, options);
+  }
+  return noneBuildable(tree, options);
+}
+
+const noneBuildable = (tree: Tree, options: NormalizedSchema) => {
   const { libsDir } = getWorkspaceLayout(tree);
+
   return {
     executor: '@nxext/vite:build',
     outputs: ['{options.outputPath}'],
@@ -38,6 +46,7 @@ function createBuildTarget(
       entryFile: `${options.projectRoot}/src/index.ts`,
       tsConfig: `${options.projectRoot}/tsconfig.lib.json`,
       assets: [{ glob: '/*', input: './public/**', output: './' }],
+      frameworkConfigFile: '@nxext/solid/plugins/vite',
     },
     configurations: {
       production: {
@@ -45,7 +54,28 @@ function createBuildTarget(
       },
     },
   };
-}
+};
+
+const buildable = (tree: Tree, options: NormalizedSchema) => {
+  const { libsDir } = getWorkspaceLayout(tree);
+
+  return {
+    executor: '@nxext/vite:package',
+    outputs: ['{options.outputPath}'],
+    options: {
+      outputPath: `dist/${libsDir}/${options.projectDirectory}`,
+      entryFile: `${options.projectRoot}/src/index.ts`,
+      tsConfig: `${options.projectRoot}/tsconfig.lib.json`,
+      assets: [{ glob: '/*', input: './public/**', output: './' }],
+      frameworkConfigFile: '@nxext/solid/plugins/vite',
+    },
+    configurations: {
+      production: {
+        dev: false,
+      },
+    },
+  };
+};
 
 function createLintTarget(options: NormalizedSchema): TargetConfiguration {
   return {
